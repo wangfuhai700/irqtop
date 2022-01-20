@@ -46,6 +46,7 @@
 #define IRQ_NAME_LEN		4
 #define IRQ_DESC_LEN		64
 #define IRQ_INFO_LEN		64
+#define CPU_LIST_LEN		1024
 #define INTERRUPTS_FILE		"/proc/interrupts"
 #define MIN(x,y)		((x) > (y) ? (y) : (x))
 #define RESERVE_ROWS		(1 + 1 + 1)	/* summary + header + last row */
@@ -75,7 +76,7 @@ static int (*sort_func)(const struct irq_info *, const struct irq_info *);
 static long smp_num_cpus;
 static char *program;
 static struct bitmask *mask = NULL;
-static char buff[1024];
+static char buff[CPU_LIST_LEN];
 /*
  * irqinfo - parse the system's interrupts
  */
@@ -413,7 +414,7 @@ int main(int argc, char *argv[])
 		move(0, 0);
 
 		if (mask) {
-			bitmask_displaylist(buff, 1024, mask);
+			bitmask_displaylist(buff, CPU_LIST_LEN, mask);
 			print_line("irqtop - IRQ : %d, TOTAL : %ld, CPU : %ld, "
 				  "ACTIVE CPU : %ld SELECTED CPU %s \n",
 				  stat->nr_irq, stat->total_irq,
