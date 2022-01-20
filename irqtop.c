@@ -75,7 +75,7 @@ static int (*sort_func)(const struct irq_info *, const struct irq_info *);
 static long smp_num_cpus;
 static char *program;
 static struct bitmask *mask = NULL;
-
+static char buff[1024];
 /*
  * irqinfo - parse the system's interrupts
  */
@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (bitmask_parselist(optarg, mask)) {
-				printf("bitmask_parselist failed ret=%d! optarg=%s\n", ret, optarg);
+				printf("bitmask_parselist failed %s.\n", optarg);
 				return EXIT_FAILURE;
 			}
 			break;
@@ -412,10 +412,19 @@ int main(int argc, char *argv[])
 
 		move(0, 0);
 
-		/* summary stat */
-		print_line("irqtop - IRQ : %d, TOTAL : %ld, CPU : %ld, "
-			"ACTIVE CPU : %ld\n", stat->nr_irq, stat->total_irq,
-			stat->nr_online_cpu, stat->nr_active_cpu);
+		if (mask) {
+			bitmask_displaylist(buff, 1024, mask);
+			print_line("irqtop - IRQ : %d, TOTAL : %ld, CPU : %ld, "
+				  "ACTIVE CPU : %ld SELECTED CPU %s \n",
+				  stat->nr_irq, stat->total_irq,
+				  stat->nr_online_cpu, stat->nr_active_cpu,
+				  buff);
+		} else
+			/* summary stat */
+			print_line("irqtop - IRQ : %d, TOTAL : %ld, CPU : %ld, "
+				"ACTIVE CPU : %ld\n", stat->nr_irq,
+				stat->total_irq, stat->nr_online_cpu,
+				stat->nr_active_cpu);
 
 		/* header */
 		attron(A_REVERSE);
