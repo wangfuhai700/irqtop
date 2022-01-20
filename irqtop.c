@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <bitmask.h>
 #define IRQTOP_VERSION 		"Version 0.1"
 #define IRQTOP_AUTHOR 		"zhenwei pi<pizhenwei@bytedance.com>"
 #define DEF_SORT_FUNC		sort_count
@@ -73,6 +74,7 @@ static long delay = 3;
 static int (*sort_func)(const struct irq_info *, const struct irq_info *);
 static long smp_num_cpus;
 static char *program;
+static struct bitmask *mask = NULL;
 
 /*
  * irqinfo - parse the system's interrupts
@@ -90,7 +92,7 @@ static struct irq_stat *get_irqinfo()
 	buffer = malloc(bufferlen);
 	if (!buffer)
 		goto out;
-	
+
 	stat = calloc(1, sizeof(*stat));
 	if (!stat)
 		goto free_buf;
@@ -140,9 +142,12 @@ static struct irq_stat *get_irqinfo()
 		for (index = 0; (index < stat->nr_active_cpu) &&
 				(tmp - buffer < length); index++) {
 			sscanf(tmp, " %10lu", &count);
+			tmp += 11;
+			if (mask && !bitmask_isbitset(mask, index)) {
+				continue;
+			}
 			curr->count += count;
 			stat->total_irq += count;
-			tmp += 11;
 		}
 
 		if (tmp - buffer < length) {
@@ -315,13 +320,13 @@ int main(int argc, char *argv[])
 	struct irq_stat *stat, *last_stat = NULL;
 	double uptime_secs = 1;
 	int retval = EXIT_SUCCESS;
-
 	static const struct option longopts[] = {
 		{ "delay",	required_argument, NULL, 'd' },
 		{ "sort",	required_argument, NULL, 's' },
 		{ "once",	no_argument,	   NULL, 'o' },
 		{ "help",	no_argument,	   NULL, 'h' },
 		{ "version",	no_argument,   NULL, 'V' },
+		{ "cpulist",	required_argument,   NULL, 'c' },
 		{  NULL, 0, NULL, 0 }
 	};
 
@@ -329,7 +334,7 @@ int main(int argc, char *argv[])
 	program = argv[0];
 	sort_func = DEF_SORT_FUNC;
 
-	while ((o = getopt_long(argc, argv, "d:os:hV", longopts, NULL)) != -1) {
+	while ((o = getopt_long(argc, argv, "d:oc:s:hV", longopts, NULL)) != -1) {
 		switch (o) {
 		case 'd':
 			errno = 0;
@@ -348,6 +353,18 @@ int main(int argc, char *argv[])
 		case 'V':
 			printf("%s\n", IRQTOP_VERSION);
 			return EXIT_SUCCESS;
+		case 'c':
+			mask = bitmask_alloc(sysconf(_SC_NPROCESSORS_CONF));
+			if (!mask) {
+				printf("bitmask_alloc failed!\n");
+				return EXIT_FAILURE;
+			}
+
+			if (bitmask_parselist(optarg, mask)) {
+				printf("bitmask_parselist failed ret=%d! optarg=%s\n", ret, optarg);
+				return EXIT_FAILURE;
+			}
+			break;
 		case 'h':
 			usage(stdout, NULL);
 		default:
