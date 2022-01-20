@@ -269,6 +269,7 @@ static void __attribute__((__noreturn__)) usage(FILE *out, char *msg)
 	fputs("Options:", out);
 	fputs(" -d, --delay <secs>  delay updates\n", out);
 	fputs(" -o, --once          only display average irq once, then exit\n", out);
+	fputs(" -c, --cpulist       only count selected cpu irq counts \n", out);
 	fputs(" -s, --sort <char>   specify sort criteria by character (see below)\n", out);
 
 	fputs("\nThe following are valid sort criteria:\n", out);
